@@ -1,4 +1,23 @@
+param subnetA1Id string
+param subnetA2Id string
+param subnetB1Id string
 
+param createPublicIp bool = false
+
+param adminUsername string
+@secure()
+param adminPassword string
+
+resource publicIp 'Microsoft.Network/publicIPAddresses@2025-05-01' = if (createPublicIp) {
+  name: 'vm-a1-01-pip'
+  location: 'eastus'
+  sku: {
+    name: 'Standard'
+  }
+  properties: {
+    publicIPAllocationMethod: 'Static'
+  }
+}
 
 resource nicVma101 'Microsoft.Network/networkInterfaces@2025-05-01' = {
   name: 'vma101nic'
@@ -9,14 +28,9 @@ resource nicVma101 'Microsoft.Network/networkInterfaces@2025-05-01' = {
         name: 'ipconfig1'
         properties: {
           privateIPAllocationMethod: 'Dynamic'
-          publicIPAddress: {
-            id: publicIPAddresses_vm_a1_01_ip_name_resource.id
-            properties: {
-              deleteOption: 'Detach'
-            }
-          }
+          publicIPAddress: createPublicIp ? { id: publicIp.id } : null
           subnet: {
-            id: virtualNetworks_VNet_A_name_Subnet_1.id
+            id: subnetA1Id
           }
         }
       }
@@ -38,7 +52,7 @@ resource nicVma201 'Microsoft.Network/networkInterfaces@2025-05-01' = {
         properties: {
           privateIPAllocationMethod: 'Dynamic'
           subnet: {
-            id: virtualNetworks_VNet_A_name_Subnet_2.id
+            id: subnetA2Id
           }
         }
       }
@@ -60,7 +74,7 @@ resource nicVmb101 'Microsoft.Network/networkInterfaces@2025-05-01' = {
         properties: {
           privateIPAllocationMethod: 'Dynamic'
           subnet: {
-            id: virtualNetworks_VNet_B_name_Subnet_1.id
+            id: subnetB1Id
           }
         }
       }
@@ -72,3 +86,164 @@ resource nicVmb101 'Microsoft.Network/networkInterfaces@2025-05-01' = {
   }
 }
 
+resource vmA101 'Microsoft.Compute/virtualMachines@2025-04-01' = {
+  name: 'vm-a1-01'
+  location: 'eastus'
+  properties: {
+    hardwareProfile: {
+      vmSize: 'Standard_B2s'
+    }
+    storageProfile: {
+      imageReference: {
+        publisher: 'MicrosoftWindowsServer'
+        offer: 'WindowsServer'
+        sku: '2025-datacenter-g2'
+        version: 'latest'
+      }
+      osDisk: {
+        osType: 'Windows'
+        name: 'vm-a1-01-osdisk'
+        createOption: 'FromImage'
+        caching: 'ReadWrite'
+        managedDisk: {
+          storageAccountType: 'StandardSSD_LRS'
+        }
+        deleteOption: 'Delete'
+        diskSizeGB: 127
+      }
+      diskControllerType: 'SCSI'
+    }
+    osProfile: {
+      computerName: 'vm-A1-01'
+      adminUsername: adminUsername
+      adminPassword: adminPassword
+      windowsConfiguration: {
+        provisionVMAgent: true
+        enableAutomaticUpdates: true
+        patchSettings: {
+          patchMode: 'AutomaticByOS'
+          assessmentMode: 'ImageDefault'
+          enableHotpatching: false
+        }
+      }
+    }
+    networkProfile: {
+      networkInterfaces: [
+        {
+          id: nicVma101.id
+          properties: {
+            deleteOption: 'Detach'
+          }
+        }
+      ]
+    }
+  }
+}
+
+resource vmA201 'Microsoft.Compute/virtualMachines@2025-04-01' = {
+  name: 'vm-a2-01'
+  location: 'eastus'
+  properties: {
+    hardwareProfile: {
+      vmSize: 'Standard_B2s'
+    }
+    storageProfile: {
+      imageReference: {
+        publisher: 'MicrosoftWindowsServer'
+        offer: 'WindowsServer'
+        sku: '2025-datacenter-g2'
+        version: 'latest'
+      }
+      osDisk: {
+        osType: 'Windows'
+        name: 'vm-a2-01-osdisk'
+        createOption: 'FromImage'
+        caching: 'ReadWrite'
+        managedDisk: {
+          storageAccountType: 'StandardSSD_LRS'
+        }
+        deleteOption: 'Delete'
+        diskSizeGB: 127
+      }
+      diskControllerType: 'SCSI'
+    }
+    osProfile: {
+      computerName: 'vm-A2-01'
+      adminUsername: adminUsername
+      adminPassword: adminPassword
+      windowsConfiguration: {
+        provisionVMAgent: true
+        enableAutomaticUpdates: true
+        patchSettings: {
+          patchMode: 'AutomaticByOS'
+          assessmentMode: 'ImageDefault'
+          enableHotpatching: false
+        }
+      }
+    }
+    networkProfile: {
+      networkInterfaces: [
+        {
+          id: nicVma201.id
+          properties: {
+            deleteOption: 'Detach'
+          }
+        }
+      ]
+    }
+  }
+}
+
+resource vmB101 'Microsoft.Compute/virtualMachines@2025-04-01' = {
+  name: 'vm-b1-01'
+  location: 'eastus'
+  properties: {
+    hardwareProfile: {
+      vmSize: 'Standard_B2s'
+    }
+    storageProfile: {
+      imageReference: {
+        publisher: 'MicrosoftWindowsServer'
+        offer: 'WindowsServer'
+        sku: '2025-datacenter-g2'
+        version: 'latest'
+      }
+      osDisk: {
+        osType: 'Windows'
+        name: 'vm-B1-01-osdisk'
+        createOption: 'FromImage'
+        caching: 'ReadWrite'
+        managedDisk: {
+          storageAccountType: 'StandardSSD_LRS'
+        }
+        deleteOption: 'Delete'
+        diskSizeGB: 127
+      }
+      diskControllerType: 'SCSI'
+    }
+    osProfile: {
+      computerName: 'vm-B1-01'
+      adminUsername: adminUsername
+      adminPassword: adminPassword
+      windowsConfiguration: {
+        provisionVMAgent: true
+        enableAutomaticUpdates: true
+        patchSettings: {
+          patchMode: 'AutomaticByOS'
+          assessmentMode: 'ImageDefault'
+          enableHotpatching: false
+        }
+      }
+    }
+    networkProfile: {
+      networkInterfaces: [
+        {
+          id: nicVmb101.id
+          properties: {
+            deleteOption: 'Detach'
+          }
+        }
+      ]
+    }
+  }
+}
